@@ -1,0 +1,5 @@
+{% if groups["mesos-master"]|length() == 1 %}
+zk://{{ hostvars[groups["mesos-master"]|first()]['ansible_default_ipv4']['address'] }}:2181/mesos
+{% else %}
+zk://{% for item in groups["mesos-master"] %}{{ hostvars[item]['ansible_default_ipv4']['address'] }}:2181{% if item != groups["mesos-master"]|last() %},{% endif %}{% endfor %}/mesos
+{% endif %}

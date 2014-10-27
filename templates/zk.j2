@@ -1,0 +1,5 @@
+{% if groups["mesos-master"]|length() == 1 %}
+zk://{{ groups["mesos-master"]|first() }}:2181/mesos
+{% else %}
+zk://{% for item in groups["mesos-master"] %}{{ item }}:2181{% if item != groups["mesos-master"]|last() %},{% endif %}{% endfor %}/mesos
+{% endif %}

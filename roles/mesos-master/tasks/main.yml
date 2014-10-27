@@ -1,0 +1,68 @@
+- rpm_key: state=present key=http://archive.cloudera.com/cdh4/redhat/6/x86_64/cdh/RPM-GPG-KEY-cloudera validate_certs=no
+  ignore_errors: yes
+  
+- yum: name=http://archive.cloudera.com/cdh4/one-click-install/redhat/6/x86_64/cloudera-cdh-4-0.x86_64.rpm state=present
+
+- yum: name=http://repos.mesosphere.io/el/6/noarch/RPMS/mesosphere-el-repo-6-2.noarch.rpm state=present
+
+- yum: name={{ item }} state=present
+  with_items:
+    - cyrus-sasl-lib
+    - java-1.7.0-openjdk
+    - zookeeper-server
+    - rpm
+    - python-setuptools
+    - mesos
+    - marathon
+    - chronos
+    
+- shell: creates=/var/lib/zookeeper/myid service zookeeper-server init 
+
+- shell: creates=/var/lib/zookeeper/myid echo {{ 255 |random}} | sudo tee -a /var/lib/zookeeper/myid >/dev/null
+
+- shell: cat /var/lib/zookeeper/myid
+  register: zookeeper_id
+
+- template: src=templates/mesos.zk.j2 dest=/etc/mesos/zk
+
+- template: src=templates/marathon.zk.j2 dest=/etc/marathon/conf/zk
+  
+- name: clean zookeeper configuration file
+  lineinfile: dest=/etc/zookeeper/conf/zoo.cfg state=absent regexp="^server.*3888$"
+  
+- name: setup zookeeper configuration file
+  lineinfile: dest=/etc/zookeeper/conf/zoo.cfg line="server.{{ hostvars[item]["zookeeper_id"]["stdout"] }}={{ hostvars[item]['ansible_default_ipv4']['address'] }}:2888:3888"
+  with_items: groups["mesos-master"]
+  
+- name: zookeeper quorum for mesos
+  shell: echo {{ groups["mesos-master"]|length() - 1 }} > /etc/mesos-master/quorum
+  when: groups["mesos-master"]|length() > 1
+  
+- name: Set the ip in /etc/mesos-master/ip
+  shell: echo {{ ansible_default_ipv4.address }} > /etc/mesos-master/ip
+  
+- name: Set the ip in /etc/mesos-master/hostname
+  shell: echo {{ ansible_default_ipv4.address }} > /etc/mesos-master/hostname
+
+- name: Create the marathon configuration directory
+  file: path=/etc/marathon/conf state=directory
+
+- name: Copy mesos-master hostname to marathon conf
+  shell: cp /etc/mesos-master/hostname /etc/marathon/conf
+
+- name: Copy mesos zk to marathon conf
+  shell: cp /etc/mesos/zk /etc/marathon/conf/master
+  
+- shell: iptables -F
+
+- shell: service iptables save
+
+- service: name={{ item }} state=restarted
+  with_items:
+  - zookeeper-server
+  - mesos-master
+  - marathon
+  
+#- name: Create the nginx server file
+#  template: src=default-site.j2 dest=default-site.conf
+#  delegate_to: localhost

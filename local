@@ -1,0 +1,5 @@
+[mesos-master]
+my-marathon.cloudapp.net
+
+[mesos-slave]
+my-marathon.cloudapp.net

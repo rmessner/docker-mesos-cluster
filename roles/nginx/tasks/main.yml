@@ -1,0 +1,24 @@
+---
+- name: Install packages to compile from sources
+  yum: name="{{ item }}"
+  sudo: yes
+  with_items:
+  - "pcre-devel"
+  - "gcc-c++"
+  - "openssl-devel"
+  - "zlib-devel"
+  
+- name: Download nginx sources
+  get_url: url=http://nginx.org/download/nginx-1.6.0.tar.gz dest=/tmp/nginx-1.6.0.tar.gz
+  delegate_to: localhost
+  
+- name: Extract nginx sources
+  unarchive: src=/tmp/nginx-1.6.0.tar.gz dest=/tmp/
+  
+- name: Configure nginx
+  shell: chdir=/tmp/nginx-1.6.0 free_form="./configure --with-http_stub_status_module --with-http_sub_module"
+  sudo: yes
+
+- name: Make && Make install
+  shell: chdir=/tmp/nginx-1.6.0 free_form="make && make install"
+  sudo: yes

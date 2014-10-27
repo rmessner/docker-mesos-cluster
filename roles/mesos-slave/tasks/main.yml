@@ -1,0 +1,37 @@
+- rpm_key: state=present key=http://archive.cloudera.com/cdh4/redhat/6/x86_64/cdh/RPM-GPG-KEY-cloudera validate_certs=no
+  ignore_errors: yes
+
+- yum: name=http://archive.cloudera.com/cdh4/one-click-install/redhat/6/x86_64/cloudera-cdh-4-0.x86_64.rpm state=present
+
+- yum: name=http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm state=present
+
+- yum: name=http://repos.mesosphere.io/el/6/noarch/RPMS/mesosphere-el-repo-6-2.noarch.rpm state=present
+
+- yum: name={{ item }} state=present
+  with_items:
+    - java-1.7.0-openjdk
+    - rpm
+    - python-setuptools
+    - mesos
+    - docker-io
+    
+- shell: iptables -F
+
+- shell: service iptables save
+
+- template: src=templates/zk.j2 dest=/etc/mesos/zk
+
+- name: Set the ip in /etc/mesos-master/ip
+  shell: echo {{ ansible_default_ipv4.address }} > /etc/mesos-master/ip
+  
+- name: Set the ip in /etc/mesos-master/hostname
+  shell: echo {{ ansible_default_ipv4.address }} > /etc/mesos-master/hostname
+  
+- shell: echo 'docker,mesos' > /etc/mesos-slave/containerizers
+
+- shell: echo '5mins' > /etc/mesos-slave/executor_registration_timeout
+
+- service: name={{ item }} state=restarted
+  with_items:
+  - mesos-slave
+  - docker
