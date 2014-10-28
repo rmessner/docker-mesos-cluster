@@ -1,18 +1,8 @@
 ---
-- hosts: nginx
-  roles:
-  - nginx
-
-- hosts: mesos-master
+- hosts: all
   sudo: yes
   roles:
-  - mesos-master
-  
-- hosts: mesos-slave
-  sudo: yes
-  roles:
-  - mesos-slave
-
-- hosts: nginx
-  roles:
-  - nginx-sites
+  - { role: nginx, when: '"nginx" in group_names' }
+  - { role: mesos-master, when: '"mesos-master" in group_names' }
+  - { role: mesos-slave, when: '"mesos-slave" in group_names' }
+  - { role: nginx-sites, when: '"nginx" in group_names' }

@@ -19,7 +19,7 @@
 
 - shell: service iptables save
 
-- template: src=templates/zk.j2 dest=/etc/mesos/zk
+- template: src=templates/mesos.zk.j2 dest=/etc/mesos/zk
 
 - name: Set the ip in /etc/mesos-master/ip
   shell: echo {{ ansible_default_ipv4.address }} > /etc/mesos-master/ip
